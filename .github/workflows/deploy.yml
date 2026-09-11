@@ -1,0 +1,43 @@
+name: Deploy Website to S3 and CloudFront
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify website files
+        run: |
+          test -f index.html
+          echo "index.html found - CI check passed"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::286841104130:role/GitHubActions-S3-CloudFront
+          aws-region: ap-south-1
+
+      - name: Deploy website to S3
+        run: |
+          aws s3 sync . s3://simple-website-eliteware \
+            --delete \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "README.md"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E15VPF3RKZHV7B \
+            --paths "/*"
