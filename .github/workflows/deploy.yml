@@ -22,29 +22,6 @@ jobs:
           test -f index.html
           echo "index.html found - CI check passed"
 
-      - name: Show GitHub OIDC claims
-        shell: bash
-        run: |
-          RESPONSE=$(curl -sS \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
-
-          TOKEN=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['value'])")
-          export TOKEN
-
-          python3 -c '
-          import os, json, base64
-          token = os.environ["TOKEN"]
-          payload = token.split(".")[1]
-          payload += "=" * (-len(payload) % 4)
-          claims = json.loads(base64.urlsafe_b64decode(payload))
-          print("aud =", claims.get("aud"))
-          print("sub =", claims.get("sub"))
-          print("repository_id =", claims.get("repository_id"))
-          print("repository_owner_id =", claims.get("repository_owner_id"))
-          print("ref =", claims.get("ref"))
-          '
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
